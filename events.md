@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 事件
 
 - [介绍](#introduction)
@@ -13,22 +12,6 @@
 	- [广播数据](#broadcast-data)
 	- [消费事件广播](#consuming-event-broadcasts)
 - [事件订阅](#event-subscribers)
-=======
-# Events
-
-- [Introduction](#introduction)
-- [Registering Events / Listeners](#registering-events-and-listeners)
-- [Defining Events](#defining-events)
-- [Defining Listeners](#defining-listeners)
-    - [Queued Event Listeners](#queued-event-listeners)
-- [Firing Events](#firing-events)
-- [Broadcasting Events](#broadcasting-events)
-    - [Configuration](#broadcast-configuration)
-    - [Marking Events For Broadcast](#marking-events-for-broadcast)
-    - [Broadcast Data](#broadcast-data)
-    - [Consuming Event Broadcasts](#consuming-event-broadcasts)
-- [Event Subscribers](#event-subscribers)
->>>>>>> laravel/5.1
 
 <a name="introduction"></a>
 ## 介绍
