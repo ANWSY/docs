@@ -47,7 +47,7 @@
     - [**mail.md**](https://github.com/Laragirl/docs/blob/5.1/mail.md) T:@Artiship
     - [packages.md](https://github.com/Laragirl/docs/blob/5.1/packages.md) T:@Artiship
     - [pagination.md](https://github.com/Laragirl/docs/blob/5.1/pagination.md) T:@everettjf
-    - [queues.md](https://github.com/Laragirl/docs/blob/5.1/queues.md)
+    - [queues.md](https://github.com/Laragirl/docs/blob/5.1/queues.md) T:@jferic
     - [redis.md](https://github.com/Laragirl/docs/blob/5.1/redis.md)
     - [session.md](https://github.com/Laragirl/docs/blob/5.1/session.md)
     - [envoy.md](https://github.com/Laragirl/docs/blob/5.1/envoy.md)
