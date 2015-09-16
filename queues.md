@@ -1,6 +1,6 @@
 # Queues
 
-- [Introduction](#introduction)
+- [介绍](#introduction)
 - [Writing Job Classes](#writing-job-classes)
     - [Generating Job Classes](#generating-job-classes)
     - [Job Class Structure](#job-class-structure)
@@ -16,30 +16,30 @@
     - [Retrying Failed Jobs](#retrying-failed-jobs)
 
 <a name="introduction"></a>
-## Introduction
+## 介绍
 
-The Laravel queue service provides a unified API across a variety of different queue back-ends. Queues allow you to defer the processing of a time consuming task, such as sending an e-mail, until a later time which drastically speeds up web requests to your application.
+Laravel 队列服务提供统一的API集成了许多不同的后端队列。队列允许你延后执行一个耗时的任务，例如延迟到指定时间发送邮件，这样大幅地加快了应用程序处理请求的速度。
 
 <a name="configuration"></a>
-### Configuration
+### 配置
 
-The queue configuration file is stored in `config/queue.php`. In this file you will find connection configurations for each of the queue drivers that are included with the framework, which includes a database, [Beanstalkd](http://kr.github.com/beanstalkd), [IronMQ](http://iron.io), [Amazon SQS](http://aws.amazon.com/sqs), [Redis](http://redis.io),  and synchronous (for local use) driver.
+队列的配置文件保存在 `config/queue.php`。在这个文件中你可以找到框架中所有队列驱动的连接设置，包括数据库、[Beanstalkd](http://kr.github.com/beanstalkd)、[IronMQ](http://iron.io)、[Amazon SQS](http://aws.amazon.com/sqs)、[Redis](http://redis.io) 和一个同步驱动（本地使用）。
 
-A `null` queue driver is also included which simply discards queued jobs.
+还包括一个驱动 `null` ，其仅仅是简单地舍弃队列任务。
 
-### Driver Prerequisites
+### 驱动的必备条件
 
-#### Database
+#### 数据库
 
-In order to use the `database` queue driver, you will need a database table to hold the jobs. To generate a migration that creates this table, run the `queue:table` Artisan command. Once the migration is created, you may migrate your database using the `migrate` command:
+为了能够使用 `database` 驱动，你需要建立一个数据库来保存任务。可以执行 `queue:table` Artisan指令创建一个迁移来建立这个数据库。一旦创建迁移，你可以用下面的 `migrate` 命令来迁移你的数据库
 
     php artisan queue:table
 
     php artisan migrate
 
-#### Other Queue Dependencies
+#### 其他队列的依赖
 
-The following dependencies are needed for the listed queue drivers:
+下面的依赖是使用对应的队列驱动所需的扩展包：
 
 - Amazon SQS: `aws/aws-sdk-php ~3.0`
 - Beanstalkd: `pda/pheanstalk ~3.0`
