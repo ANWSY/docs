@@ -1,19 +1,19 @@
 # Queues
 
 - [介绍](#introduction)
-- [Writing Job Classes](#writing-job-classes)
-    - [Generating Job Classes](#generating-job-classes)
-    - [Job Class Structure](#job-class-structure)
-- [Pushing Jobs Onto The Queue](#pushing-jobs-onto-the-queue)
-    - [Delayed Jobs](#delayed-jobs)
-    - [Dispatching Jobs From Requests](#dispatching-jobs-from-requests)
-- [Running The Queue Listener](#running-the-queue-listener)
-    - [Supervisor Configuration](#supervisor-configuration)
-    - [Daemon Queue Listener](#daemon-queue-listener)
-    - [Deploying With Daemon Queue Listeners](#deploying-with-daemon-queue-listeners)
-- [Dealing With Failed Jobs](#dealing-with-failed-jobs)
-    - [Failed Job Events](#failed-job-events)
-    - [Retrying Failed Jobs](#retrying-failed-jobs)
+- [实现任务类](#writing-job-classes)
+    - [生产任务类](#generating-job-classes)
+    - [任务类的结构](#job-class-structure)
+- [推送任务到队列](#pushing-jobs-onto-the-queue)
+    - [延时任务](#delayed-jobs)
+    - [从请求分发任务](#dispatching-jobs-from-requests)
+- [运行队列监听器](#running-the-queue-listener)
+    - [监管配置](#supervisor-configuration)
+    - [队列监听器守护进程](#daemon-queue-listener)
+    - [用队列监听器守护进程部署](#deploying-with-daemon-queue-listeners)
+- [处理失败的任务](#dealing-with-failed-jobs)
+    - [失败任务事件](#failed-job-events)
+    - [重试失败任务](#retrying-failed-jobs)
 
 <a name="introduction"></a>
 ## 介绍
@@ -47,21 +47,21 @@ Laravel 队列服务提供统一的API集成了许多不同的后端队列。队
 - Redis: `predis/predis ~1.0`
 
 <a name="writing-job-classes"></a>
-## Writing Job Classes
+## 实现任务类
 
 <a name="generating-job-classes"></a>
-### Generating Job Classes
+### 生成任务类
 
-By default, all of the queueable jobs for your application are stored in the `app/Jobs` directory. You may generate a new queued job using the Artisan CLI:
+默认情况下，你的应用中所有可以进入队列的任务都存放在目录 `app/Jobs` 下面。你可以使用 Artisan CLI 生成一个新的排队任务：
 
     php artisan make:job SendReminderEmail --queued
 
-This command will generate a new class in the `app/Jobs` directory, and the class will implement the `Illuminate\Contracts\Queue\ShouldQueue` interface, indicating to Laravel that the job should be pushed onto the queue instead of run synchronously.
+这个命令会在 `app/Jobs` 目录下面生产一个新的类。这个类会实现接口 `Illuminate\Contracts\Queue\ShouldQueue`，指示 Laravel 该任务应该推送到队列，而不是同步执行。
 
 <a name="job-class-structure"></a>
-### Job Class Structure
+### 任务类的结构
 
-Job classes are very simple, normally containing only a `handle` method which is called when the job is processed by the queue. To get started, let's take a look at an example job class:
+任务类非常简单，一搬只包含一个 ｀handle｀ 方法。队列处理任务的时候会调用这个方法。让我们看一下一个任务类的例子：
 
     <?php
 
@@ -108,17 +108,17 @@ Job classes are very simple, normally containing only a `handle` method which is
         }
     }
 
-In this example, note that we were able to pass an [Eloquent model](/docs/{{version}}/eloquent) directly into the queued job's constructor. Because of the `SerializesModels` trait that the job is using, Eloquent models will be gracefully serialized and unserialized when the job is processing. If your queued job accepts an Eloquent model in its constructor, only the identifier for the model will be serialized onto the queue. When the job is actually handled, the queue system will automatically re-retrieve the full model instance from the database. It's all totally transparent to your application and prevents issues that can arise from serializing full Eloquent model instances.
+在这个例子中可以看到，我们直接把一个 [Eloquent model](/docs/{{version}}/eloquent) 传入一个任务的构造器中。因为任务使用了 `SerializesModels` trait， Eloquent 会在任务处理过程中被优雅的序列化和反序列化。如果你的排队任务在其构造器中包含了一个 Eloquent 模型，仅仅是模型的标识符被序列化到队列。在真正处理任务的时候，队列系统会自动地从数据库中取回整改模型实例整个过程对于你的应用是透明的，而且处理所有在序列化整个 Eloquent 模型实例过程中可能产生的问题。
 
-The `handle` method is called when the job is processed by the queue. Note that we are able to type-hint dependencies on the `handle` method of the job. The Laravel [service container](/docs/{{version}}/container) automatically injects these dependencies.
+`handle` 方法在队列处理任务的时候被调用。我们可以在任务的 `handle` 方法中提示需要的依赖。Laravel ［服务容器］(/docs/{{version}}/container) 会自动注入这些依赖。
 
-#### When Things Go Wrong
+#### 处理问题
 
-If an exception is thrown while the job is being processed, it will automatically be released back onto the queue so it may be attempted again. The job will continue to be released until it has been attempted the maximum number of times allowed by your application. The number of maximum attempts is defined by the `--tries` switch used on the `queue:listen` or `queue:work` Artisan jobs. More information on running the queue listener [can be found below](#running-the-queue-listener).
+如果任务在被处理的时候抛出异常，任务会被自动释放回到队列中以便再次尝试执行该任务。任务会一直被释放回队列直到达到应用程序的尝试上限。这个上限值可以通过 Artisan 命令 `queue:listen` or `queue:work`的的  `--tries` 开关设置。运行队列监听器的更多信息 [可以在下文找到](#running-the-queue-listener)。
 
-#### Manually Releasing Jobs
+#### 手动释放任务
 
-If you would like to `release` the job manually, the `InteractsWithQueue` trait, which is already included in your generated job class, provides access to the queue job `release` method. The `release` method accepts one argument: the number of seconds you wish to wait until the job is made available again:
+如果你想手动 `release` 一个任务，生产的任务类中包含了一个 `InteractsWithQueue` trait，提供入口进入队列任务的 `release` 方法。这个 `release` 方法接收一个参数：秒数，你希望等待的时间直到任务再次获取。
 
     public function handle(Mailer $mailer)
     {
@@ -127,9 +127,9 @@ If you would like to `release` the job manually, the `InteractsWithQueue` trait,
         }
     }
 
-#### Checking The Number Of Run Attempts
+#### 检查任务尝试次数
 
-As noted above, if an exception occurs while the job is being processed, it will automatically be released back onto the queue. You may check the number of attempts that have been made to run the job using the `attempts` method:
+正如上面提到的，如果在处理过程中出现异常，任务会自动释放回到队列。你可以使用 `attempts` 方法检任务已经被查尝运行的次数：
 
     public function handle(Mailer $mailer)
     {
@@ -139,9 +139,10 @@ As noted above, if an exception occurs while the job is being processed, it will
     }
 
 <a name="pushing-jobs-onto-the-queue"></a>
-## Pushing Jobs Onto The Queue
+## 推送任务到队列
 
-The default Laravel controller located in `app/Http/Controllers/Controller.php` uses a `DispatchesJob` trait. This trait provides several methods allowing you to conveniently push jobs onto the queue, such as the `dispatch` method:
+默认的 Laravel 控制器位于 `app/Http/Controllers/Controller.php`，使用了一个 `DispatchesJob` trait。这个 trait 提供了几个方法允许你方便地把任务推送到队列，下面就是一个
+`dispatch` 方法：
 
     <?php
 
@@ -169,7 +170,7 @@ The default Laravel controller located in `app/Http/Controllers/Controller.php` 
         }
     }
 
-Of course, sometimes you may wish to dispatch a job from somewhere in your application besides a route or controller. For that reason, you can include the `DispatchesJobs` trait on any of the classes in your application to gain access to its various dispatch methods. For example, here is a sample class that uses the trait:
+当然，有时候你可能希望从你的应用程序的某个地方分发一个任务，而不仅仅是从一个路由或者一个控制器。在那个情况下，你可以在你的应用程序的任何一个类中包含 `DispatchesJobs` trait来进入其多个分发方法例如，下面是一个使用该 trait的一个类：
 
     <?php
 
@@ -182,11 +183,12 @@ Of course, sometimes you may wish to dispatch a job from somewhere in your appli
         use DispatchesJobs;
     }
 
-#### Specifying The Queue For A Job
+#### 指定任务的执行队列
 
-You may also specify the queue a job should be sent to.
+你可以指定一个任务应该被发送到的队列。
 
-By pushing jobs to different queues, you may "categorize" your queued jobs, and even prioritize how many workers you assign to various queues. This does not push jobs to different queue "connections" as defined by your queue configuration file, but only to specific queues within a single connection. To specify the queue, use the `onQueue` method on the job instance. The `onQueue` method is provided by the base `App\Jobs\Job` class included with Laravel:
+通过将任务推送到不同的队列，你可以“分类”你的排队任务，你甚至可以为不同的队列考虑不同数量的工作线程。这里不能将任务推送到队列配置文件中设置的不同队列“连接”
+，而仅是同一个连接的不同的队列。使用任务实例的 `onQueue` 方法制定推送队列。该 `onQueue` 方法由 Laravel 中的 `App\Jobs\Job` 基类提供：
 
     <?php
 
@@ -217,9 +219,9 @@ By pushing jobs to different queues, you may "categorize" your queued jobs, and 
     }
 
 <a name="delayed-jobs"></a>
-### Delayed Jobs
+### 延时任务
 
-Sometimes you may wish to delay the execution of a queued job. For instance, you may wish to queue a job that sends a customer a reminder e-mail 15 minutes after sign-up. You may accomplish this using the `delay` method on your job class, which is provided by the `Illuminate\Bus\Queueable` trait:
+有时候，你可能希望延时执行一个排队的任务。例如，你可能希望将一个在客户签约15分钟之后向其发送提醒邮件的任务排队。你可以使用任务类的 `delay` 方法完成这个，
 
     <?php
 
@@ -249,14 +251,14 @@ Sometimes you may wish to delay the execution of a queued job. For instance, you
         }
     }
 
-In this example, we're specifying that the job should be delayed in the queue for 60 seconds before being made available to workers.
+在这个例子中，我们指明任务需要在队列中延时60秒才可以被工作线程再次获取。
 
-> **Note:** The Amazon SQS service has a maximum delay time of 15 minutes.
+> **注意:** Amazon SQS 服务最大的延时时间是15分钟。
 
 <a name="dispatching-jobs-from-requests"></a>
-### Dispatching Jobs From Requests
+### 从请求中分发任务
 
-It is very common to map HTTP request variables into jobs. So, instead of forcing you to do this manually for each request, Laravel provides some helper methods to make it a cinch. Let's take a look at the `dispatchFrom` method available on the `DispatchesJobs` trait. By default, this trait is included on the base Laravel controller class:
+将 HTTP 请求映射成任务是非常普遍的。所有，为了免去你手动映射请求，Laravel 提供了一些辅助方法让这个做起更加容易。让我们看一下`DispatchesJobs` trait 中的`dispatchFrom` 方法。默认情况下，这个 trait 囊括在 Laravel 的基类控制器中：
 
     <?php
 
@@ -282,30 +284,30 @@ It is very common to map HTTP request variables into jobs. So, instead of forcin
         }
     }
 
-This method will examine the constructor of the given job class and extract variables from the HTTP request (or any other `ArrayAccess` object) to fill the needed constructor parameters of the job. So, if our job class accepts a `productId` variable in its constructor, the job bus will attempt to pull the `productId` parameter from the HTTP request.
+这个方法会坚持给定任务类的构造器，并且从 HTTP 请求（或者任何其他 `ArrayAccess` 类）中提取变量去填充类的构造参数。所以，如果我们的任务类的构造器接收变量 `productId` ， 类任务线会尝试从 HTTP 请求中抽取参数  `productId`。
 
-You may also pass an array as the third argument to the `dispatchFrom` method. This array will be used to fill any constructor parameters that are not available on the request:
+你也可以传递一个数组作为 `dispatchFrom` 方法的第三个参数。这个数组会被用来填充任何从请求中获取不到的参数：
 
     $this->dispatchFrom('App\Jobs\ProcessOrder', $request, [
         'taxPercentage' => 20,
     ]);
 
 <a name="running-the-queue-listener"></a>
-## Running The Queue Listener
+## 运行队列监听器
 
-#### Starting The Queue Listener
+#### 启动队列监听器
 
-Laravel includes an Artisan command that will run new jobs as they are pushed onto the queue. You may run the listener using the `queue:listen` command:
+Laravel 包含了一个 Artisan 命令用来运行推送到队列中新的任务。你可以用 `queue:listen` 命令运行监听器：
 
     php artisan queue:listen
 
-You may also specify which queue connection the listener should utilize:
+你也可以指定监听器使用的队列连接：
 
     php artisan queue:listen connection
 
-Note that once this task has started, it will continue to run until it is manually stopped. You may use a process monitor such as [Supervisor](http://supervisord.org/) to ensure that the queue listener does not stop running.
+需要注意，一旦这个任务被启动，它会一直运行直到被手动停止。你也可以使用一个监控进程，例如 [Supervisor](http://supervisord.org/)，来保证监听器不停地运行。
 
-#### Queue Priorities
+#### 队列优先级
 
 You may pass a comma-delimited list of queue connections to the `listen` job to set queue priorities:
 
