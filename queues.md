@@ -309,34 +309,34 @@ Laravel 包含了一个 Artisan 命令用来运行推送到队列中新的任务
 
 #### 队列优先级
 
-You may pass a comma-delimited list of queue connections to the `listen` job to set queue priorities:
+你可以给监听的任务传递一个用逗号分割的队列连接列表，来设置队列的优先级：
 
     php artisan queue:listen --queue=high,low
 
-In this example, jobs on the `high` queue will always be processed before moving onto jobs from the `low` queue.
+在上面的例子中，队列 `high` 上的任务会总是优先于队列 `low` 上的任务被处理。
 
-#### Specifying The Job Timeout Parameter
+#### 指定任务超时参数
 
-You may also set the length of time (in seconds) each job should be allowed to run:
+你可以设定每个任务允许执行的时间长度（秒）：
 
     php artisan queue:listen --timeout=60
 
-#### Specifying Queue Sleep Duration
+#### 指定队列的休眠时长
 
-In addition, you may specify the number of seconds to wait before polling for new jobs:
+另外，你可以设定轮询新任务之前等待的秒数：
 
     php artisan queue:listen --sleep=5
 
-Note that the queue only "sleeps" if no jobs are on the queue. If more jobs are available, the queue will continue to work them without sleeping.
+需要注意队列仅仅在其没有任务的时候才会“休眠”。如果有任务，队列会继续工作而不再进入休眠。
 
 <a name="supervisor-configuration"></a>
-### Supervisor Configuration
+### Supervisor 配置
 
-Supervisor is a process monitor for the Linux operating system, and will automatically restart your `queue:listen` or `queue:work` commands if they fail. To install Supervisor on Ubuntu, you may use the following command:
+supervisor 是 Linux 操作系统上的一个进程监控程序，在遇到失败的时候会自动的重启你的 `queue:listen` 或者 `queue:work` 命令。在 Ubuntu 上安装 Supervisor，你可以运行下面这条命令：
 
     sudo apt-get install supervisor
 
-Supervisor configuration files are typically stored in the `/etc/supervisor/conf.d` directory. Within this directory, you may create any number of configuration files that instruct supervisor how your processes should be monitored. For example, let's create a `laravel-worker.conf` file that starts and monitors a `queue:work` process:
+Supervisor 配置文件一般存放在目录 `/etc/supervisor/conf.d`。在这个目录中，你可以创建任意数目的配置文件来告诉 supervisor 怎样监管你的进程。例如，我们可以创建一个 `laravel-worker.conf` 文件来启动和监管 `queue:work` 进程。
 
     [program:laravel-worker]
     process_name=%(program_name)s_%(process_num)02d
@@ -348,7 +348,7 @@ Supervisor configuration files are typically stored in the `/etc/supervisor/conf
     redirect_stderr=true
     stdout_logfile=/home/forge/app.com/worker.log
 
-In this example, the `numprocs` directive will instruct Supervisor to run 8 `queue:work` processes and monitor all of them, automatically restarting them if they fail. Once the configuration file has been created, you may update the Supervisor configuration and start the processes using the following commands:
+在这个例子中，`numprocs` 指令会让 Supervisor 运行8个 `queue:work` 进程并监管它们，在遇到失败的时候自动重启它们。一旦创建配置文件，你可以使用下面的命令更新 Supervisor 配置并重启进程：
 
     sudo supervisorctl reread
 
@@ -356,14 +356,14 @@ In this example, the `numprocs` directive will instruct Supervisor to run 8 `que
 
     sudo supervisorctl start laravel-worker:*
 
-For more information on configuring and using Supervisor, consult the [Supervisor documentation](http://supervisord.org/index.html). Alternatively, you may use [Laravel Forge](https://forge.laravel.com) to automatically configure and manage your Supervisor configuration from a convenient web interface.
+关于配置和使用 supervisor 更多的信息，可以参考 [Supervisor 文档](http://supervisord.org/index.html)。另外，你也可以用 [Laravel Forge](https://forge.laravel.com) 在一个更加便捷的网页上自动配置和管理你的 Supervisor 配置项。
 
 <a name="daemon-queue-listener"></a>
-### Daemon Queue Listener
+### 队列监听器守护进程
 
-The `queue:work` Artisan command includes a `--daemon` option for forcing the queue worker to continue processing jobs without ever re-booting the framework. This results in a significant reduction of CPU usage when compared to the `queue:listen` command:
+Artisan 命令 `queue:work` 包括一个 `--daemon` 选项，强制队列处理器持续处理任务，而不需要每次都重启框架。这样比起命令 `queue:listen` 可以有效的减少 CPU 的使用量：
 
-To start a queue worker in daemon mode, use the `--daemon` flag:
+要在守护进程模式启动队列处理器，使用 `--daemon` 参数：
 
     php artisan queue:work connection --daemon
 
@@ -371,42 +371,44 @@ To start a queue worker in daemon mode, use the `--daemon` flag:
 
     php artisan queue:work connection --daemon --sleep=3 --tries=3
 
-As you can see, the `queue:work` job supports most of the same options available to `queue:listen`. You may use the `php artisan help queue:work` job to view all of the available options.
+如你所见，`queue:work` 命令支持 `queue:listen` 命令的大多相同的参数选项。你也可以使用 `php artisan help queue:work` 命令来查看所有可用的选项。
 
-#### Coding Considerations For Daemon Queue Listeners
+#### 队列监听器守护进程中的编码注意
 
-Daemon queue workers do not restart the framework before processing each job. Therefore, you should be careful to free any heavy resources before your job finishes. For example, if you are doing image manipulation with the GD library, you should free the memory with `imagedestroy` when you are done.
+队列监听器守护进程在处理每个请求之前不会重启框架，因此你需要在任务完成之前小心地释放所有占用资源。例如，如果你正在使用 GD 库处理图像，在完成处理的时候你应该调用 `imagedestroy` 方法来释放占用的内存。
 
+同样的，在守护进程长时间执行期间，数据库连接可能中断。你可以使用 `DB::reconnect` 方法来确保你有一个全新的连接。
 Similarly, your database connection may disconnect when being used by long-running daemon. You may use the `DB::reconnect` method to ensure you have a fresh connection.
 
 <a name="deploying-with-daemon-queue-listeners"></a>
-### Deploying With Daemon Queue Listeners
+### 部署队列监听器守护进程
 
-Since daemon queue workers are long-lived processes, they will not pick up changes in your code without being restarted. So, the simplest way to deploy an application using daemon queue workers is to restart the workers during your deployment script. You may gracefully restart all of the workers by including the following command in your deployment script:
+因为队列处理器守护进程是常驻进程，它们在没有重启的情况下是无法感知你代码的改动的。所以，最简单的使用队列监听器守护进程部署应用的方式是在部署脚本里面重启所有处理器。你在部署脚本中加入下面的命令，可以优雅的重启所有的处理器：
 
     php artisan queue:restart
 
+这个命令会优雅的指示所有的队列处理器在完成当前任务后重新启动，所有不会丢失任何存在的任务。
 This command will gracefully instruct all queue workers to restart after they finish processing their current job so that no existing jobs are lost.
 
-> **Note:** This command relies on the cache system to schedule the restart. By default, APCu does not work for CLI jobs. If you are using APCu, add `apc.enable_cli=1` to your APCu configuration.
+> **注意:** 这个命令依赖缓存系统调度重启。默认情况下，APCu 对 CLI 任务不起作用。如果你在使用 APCu，把 `apc.enable_cli=1` 加到你的 APCu 配置中。
 
 <a name="dealing-with-failed-jobs"></a>
-## Dealing With Failed Jobs
+## 处理失败任务
 
-Since things don't always go as planned, sometimes your queued jobs will fail. Don't worry, it happens to the best of us! Laravel includes a convenient way to specify the maximum number of times a job should be attempted. After a job has exceeded this amount of attempts, it will be inserted into a `failed_jobs` table. The name of the failed jobs can be configured via the `config/queue.php` configuration file.
+事情往往不会如你预期的一样，有时候你推送到队列的任务会执行失败。别担心，谁都避免不了这样的情况！Laravel 包含一个简单的方法用来指定一个任务最多可以被执行的次数。在执行任务超过最多尝试次数时，它将会添加至 `failed_jobs` 表中。失败任务的数据表名称可以在 `config/queue.php` 里进行设置。
 
-To create a migration for the `failed_jobs` table, you may use the `queue:failed-table` command:
+你可以使用 `queue:failed-table` 命令为 `failed_jobs` 表创建一个迁移：
 
     php artisan queue:failed-table
 
-When running your [queue listener](#running-the-queue-listener), you may specify the maximum number of times a job should be attempted using the `--tries` switch on the `queue:listen` command:
+在运行你的 [队列监听器](#running-the-queue-listener) 的时候，你可以指定一个最大值来限制一个任务应该最多被尝试执行的次数，只需要你执行命令 `queue:listen` 时加上 `--tries` 选项：
 
     php artisan queue:listen connection-name --tries=3
 
 <a name="failed-job-events"></a>
-### Failed Job Events
+### 失败任务事件
 
-If you would like to register an event that will be called when a queued job fails, you may use the `Queue::failing` method. This event is a great opportunity to notify your team via e-mail or [HipChat](https://www.hipchat.com). For example, we may attach a callback to this event from the `AppServiceProvider` that is included with Laravel:
+假如你想注册一个在队列任务失败时调用的事件，你可以使用 `Queue::failing` 方法。这个事件提供一个很好的机会，用e-mail 或者 [HipChat](https://www.hipchat.com) 通知你的团队。例如，你可以通过 Laravel 中的 `AppServiceProvider` 在这个事件上附加一个回调：
 
     <?php
 
@@ -440,9 +442,9 @@ If you would like to register an event that will be called when a queued job fai
         }
     }
 
-#### Failed Method On Job Classes
+#### 任务类中的 Failed 方法
 
-For more granular control, you may define a `failed` method directly on a queue job class, allowing you to perform job specific actions when a failure occurs:
+你可以在任务里中直接定义 `failed` 来做更加细粒度的控制，允许你在失败的情况下实施任务相关的特殊措施：
 
     <?php
 
@@ -481,20 +483,20 @@ For more granular control, you may define a `failed` method directly on a queue 
     }
 
 <a name="retrying-failed-jobs"></a>
-### Retrying Failed Jobs
+### 重试失败任务
 
-To view all of your failed jobs that have been inserted into your `failed_jobs` database table, you may use the `queue:failed` Artisan command:
+你可以使用 Artisan 命令 `queue:failed` 查看数据库表 `failed_jobs` 中所有的失败任务：
 
     php artisan queue:failed
 
-The `queue:failed` command will list the job ID, connection, queue, and failure time. The job ID may be used to retry the failed job. For instance, to retry a failed job that has an ID of 5, the following command should be issued:
+`queue:failed` 命令会列出任务的 ID，连接，队列，和失败的时间。任务的 ID 可以用来去重试失败的任务。例如，重试 ID 为 5 的任务，可以使用下面的命令：
 
     php artisan queue:retry 5
 
-If you would like to delete a failed job, you may use the `queue:forget` command:
+如果你想删除一个失败的任务，你可以用下面的 `queue:forget` 命令：
 
     php artisan queue:forget 5
 
-To delete all of your failed jobs, you may use the `queue:flush` command:
+删除所有的失败任务，你可以用下面的 `queue:flush` 命令：
 
     php artisan queue:flush
